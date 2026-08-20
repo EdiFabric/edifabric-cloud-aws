@@ -1,6 +1,7 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using System.Net;
 using System.Text.Json;
+using EdiFabric.Native.X12;
 
 static class ErrorHandler
 {
@@ -20,16 +21,26 @@ static class ErrorHandler
 
     public static APIGatewayProxyResponse BuildErrorResponse(Exception ex)
     {
-        var statusCode = ex is InvalidDataException ? HttpStatusCode.BadRequest : HttpStatusCode.InternalServerError;
-        return new APIGatewayProxyResponse
+        return BuildErrorResponse(StatusCodeFor(ex), ex.Message);
+    }
+
+    private static HttpStatusCode StatusCodeFor(Exception ex)
+    {
+        if (ex is InvalidDataException)
+            return HttpStatusCode.BadRequest;
+
+        if (ex is EdiFabricException ediEx)
         {
-            StatusCode = (int)statusCode,
-            Body = JsonSerializer.Serialize(new
-            {
-                Code = (int)statusCode,
-                Details = new List<string> { ex.Message }
-            }),
-            Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-        };
+            return ediEx.Code is
+                (int)EdiFabricErrorCode.IncorrectInput or
+                (int)EdiFabricErrorCode.MapNotSet or
+                (int)EdiFabricErrorCode.IncorrectMode or
+                (int)EdiFabricErrorCode.ConfigDeserialization or
+                (int)EdiFabricErrorCode.SplitSegmentIdMissing
+                ? HttpStatusCode.BadRequest
+                : HttpStatusCode.InternalServerError;
+        }
+
+        return HttpStatusCode.InternalServerError;
     }
 }

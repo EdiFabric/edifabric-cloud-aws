@@ -10,3 +10,9 @@
 /EdiFabric.Api.AWS/EdiFabric.Api.AWS/bin/Release/net6.0
 /EdiFabric.Api.AWS/bin
 /EdiFabric.Api.AWS/obj
+/EdiFabric.Api.AWS/edifabric-x12-tools.dll
+/EdiFabric.Api.AWS/edifabric-x12-tools.so
+/EdiFabric.Api.AWS/edifabric-x12-tools.dylib
+/edifabric-x12-tools.dll
+/edifabric-x12-tools.so
+/edifabric-x12-tools.dylib

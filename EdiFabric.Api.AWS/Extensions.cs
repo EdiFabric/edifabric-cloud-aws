@@ -1,251 +1,120 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
-using EdiFabric.Api;
-using System.Text;
+using EdiFabric.Api.AWS.Models;
 
 internal static class Extensions
 {
-    public static ReadParams GetReadParams(this APIGatewayProxyRequest req)
-    {        
-        var result = new ReadParams();
+    public static ReadParameters GetReadParams(this APIGatewayProxyRequest req)
+    {
+        var result = new ReadParameters();
+        var query = req.ParseQuery();
+        if (query is null)
+            return result;
 
-        if (req.QueryStringParameters != null)
-        {
-            var queryDictionary = req.QueryStringParameters;
-
-            if (queryDictionary.TryGetValue("continueOnError", out string coe) && bool.TryParse(coe, out bool continueOnError))
-            {
-                result.ContinueOnError = continueOnError;
-            }
-
-            if (queryDictionary.TryGetValue("charSet", out string charSet) && !string.IsNullOrEmpty(charSet))
-            {
-                result.CharSet = charSet;
-            }
-
-            if (queryDictionary.TryGetValue("eancomS3", out string es3) && bool.TryParse(es3, out bool eancomS3))
-            {
-                result.EancomS3IsDefault = eancomS3;
-            }
-
-            if (queryDictionary.TryGetValue("ignoreNullValues", out string inv) && bool.TryParse(inv, out bool ignoreNullValues))
-            {
-                result.IgnoreNullValues = ignoreNullValues;
-            }
-
-            if (queryDictionary.TryGetValue("model", out string model) && !string.IsNullOrEmpty(model))
-            {
-                result.Model = model;
-            }
-        }
+        result.CharSet = query.GetString("charSet");
 
         return result;
     }
 
-    public static WriteParams GetWriteParams(this APIGatewayProxyRequest req)
+    public static WriteParameters GetWriteParams(this APIGatewayProxyRequest req)
     {
-        var result = new WriteParams();
+        var result = new WriteParameters();
+        var query = req.ParseQuery();
+        if (query is null)
+            return result;
 
-        if (req.QueryStringParameters != null)
-        {
-            var queryDictionary = req.QueryStringParameters;
-
-            if (queryDictionary.TryGetValue("preserveWhitespace", out string pw) && bool.TryParse(pw, out bool preserveWhitespace))
-            {
-                result.PreserveWhitespace = preserveWhitespace;
-            }
-
-            result.ContentType = "application/octet-stream; charset=utf-8";
-            if (queryDictionary.TryGetValue("charSet", out string charSet) && !string.IsNullOrEmpty(charSet))
-            {
-                result.CharSet = charSet;
-                result.ContentType = $"application/octet-stream; charset={charSet}";
-            }
-
-            if (queryDictionary.TryGetValue("postfix", out string postFix) && !string.IsNullOrEmpty(postFix))
-            {
-                result.Postfix = postFix;
-            }
-
-            if (queryDictionary.TryGetValue("eancomS3", out string es3) && bool.TryParse(es3, out bool eancomS3))
-            {
-                result.EancomS3IsDefault = eancomS3;
-            }
-
-            if (queryDictionary.TryGetValue("noG1", out string ng) && bool.TryParse(ng, out bool noG1))
-            {
-                result.NoG1 = noG1;
-            }
-
-            if (queryDictionary.TryGetValue("trailerMessage", out string trailerMessage) && !string.IsNullOrEmpty(trailerMessage))
-            {
-                result.NcpdpTrailerMessage = trailerMessage;
-            }
-        }
+        result.ContentType = query.GetString("contentType");
+        result.CharSet = query.GetString("charSet");
+        result.Postfix = query.GetString("postfix");
 
         return result;
     }
 
-    public static ValidateParams GetValidateParams(this APIGatewayProxyRequest req)
+    public static ValidateParameters GetValidateParams(this APIGatewayProxyRequest req)
     {
-        var result = new ValidateParams();
+        var result = new ValidateParameters();
+        var query = req.ParseQuery();
+        if (query is null)
+            return result;
 
-        if (req.QueryStringParameters != null)
-        {
-            var queryDictionary = req.QueryStringParameters;
+        BindValidate(result, query);
+        return result;
+    }
 
-            if (queryDictionary.TryGetValue("skipTrailer", out string st) && bool.TryParse(st, out bool skipTrailer))
-            {
-                result.SkipTrailerValidation = skipTrailer;
-            }
+    public static AckParameters GetAckParams(this APIGatewayProxyRequest req)
+    {
+        var result = new AckParameters();
+        var query = req.ParseQuery();
+        if (query is null)
+            return result;
 
-            if (queryDictionary.TryGetValue("decimalPoint", out string decimalPoint) && !string.IsNullOrEmpty(decimalPoint))
-            {
-                result.DecimalPoint = decimalPoint == "." ? '.' : ',';
-            }
+        BindValidate(result, query);
 
-            if (queryDictionary.TryGetValue("syntaxSet", out string syntaxSet) && !string.IsNullOrEmpty(syntaxSet))
-            {
-                result.SyntaxSet = syntaxSet;
-            }
-
-            if (queryDictionary.TryGetValue("structureOnly", out string so) && bool.TryParse(so, out bool structureOnly))
-            {
-                result.StructureOnly = structureOnly;
-            }
-
-            if (queryDictionary.TryGetValue("eancomS3", out string es3) && bool.TryParse(es3, out bool eancomS3))
-            {
-                result.EancomS3IsDefault = eancomS3;
-            }
-
-            if (queryDictionary.TryGetValue("basicSyntax", out string bs) && bool.TryParse(bs, out bool basicSyntax))
-            {
-                result.BasicSyntax = basicSyntax;
-            }
-        }
+        if (query.TryGetBool("suppressTa1", out var suppressTa1))
+            result.SuppressTa1 = suppressTa1;
+        if (query.TryGetBool("ak901p", out var ak901p))
+            result.Ak901p = ak901p;
+        if (query.TryGetBool("genForValid", out var genForValid))
+            result.GenForValid = genForValid;
+        if (query.TryGetBool("gen997", out var gen997))
+            result.Gen997 = gen997;
 
         return result;
     }
 
-    public static AckParams GetAckParams(this APIGatewayProxyRequest req)
+    public static string? GetContentType(this APIGatewayProxyRequest req) => req.GetHeader("Content-Type");
+
+    public static string? GetHeader(this APIGatewayProxyRequest req, string name)
     {
-        var result = new AckParams();
+        if (req.Headers == null)
+            return null;
 
-        if (req.QueryStringParameters != null)
-        {
-            var queryDictionary = req.QueryStringParameters;
+        if (req.Headers.TryGetValue(name, out var value) && !string.IsNullOrEmpty(value))
+            return value;
 
-            if (queryDictionary.TryGetValue("syntaxSet", out string syntaxSet) && !string.IsNullOrEmpty(syntaxSet))
-            {
-                result.SyntaxSet = syntaxSet;
-            }
-
-            if (queryDictionary.TryGetValue("detectDuplicates", out string dd) && bool.TryParse(dd, out bool detectDuplicates))
-            {
-                result.DetectDuplicates = detectDuplicates;
-            }
-
-            if (queryDictionary.TryGetValue("ackForValidTrans", out string avm) && bool.TryParse(avm, out bool ackForValidTrans))
-            {
-                result.GenerateForValidMessages = ackForValidTrans;
-            }
-
-            if (queryDictionary.TryGetValue("tranRefNumber", out string mcn) && int.TryParse(mcn, out int tranRefNumber))
-            {
-                result.MessageControlNumber = tranRefNumber;
-            }
-
-            if (queryDictionary.TryGetValue("technicalAck", out string technicalAck) && !string.IsNullOrEmpty(technicalAck))
-            {
-                result.TechnicalAck = technicalAck;
-            }
-
-            if (queryDictionary.TryGetValue("eancomS3", out string es3) && bool.TryParse(es3, out bool eancomS3))
-            {
-                result.EancomS3IsDefault = eancomS3;
-            }
-
-            if (queryDictionary.TryGetValue("batchAcks", out string ba) && bool.TryParse(ba, out bool batchAcks))
-            {
-                result.BatchAcks = batchAcks;
-            }
-
-            if (queryDictionary.TryGetValue("interchangeRefNumber", out string irn) && int.TryParse(irn, out int interchangeRefNumber))
-            {
-                result.InterchangeControlNumber = interchangeRefNumber;
-            }
-
-            if (queryDictionary.TryGetValue("ack", out string ack) && !string.IsNullOrEmpty(ack))
-            {
-                result.AckVersion = ack;
-            }
-
-            if (queryDictionary.TryGetValue("batchAcks", out string ak9isP) && bool.TryParse(ak9isP, out bool ak901isP))
-            {
-                result.Ak901ShouldBeP = ak901isP;
-            }
-        }
-
-        return result;
+        var match = req.Headers.FirstOrDefault(h => string.Equals(h.Key, name, StringComparison.OrdinalIgnoreCase));
+        return string.IsNullOrEmpty(match.Value) ? null : match.Value;
     }
 
-    public static AnalyzeParams GetAnalyzeParams(this APIGatewayProxyRequest req)
+    private static void BindValidate(ValidateParameters result, Dictionary<string, string> query)
     {
-        var result = new AnalyzeParams();
-
-        if (req.QueryStringParameters != null)
-        {
-            var queryDictionary = req.QueryStringParameters;
-
-            if (queryDictionary.TryGetValue("model", out string model) && !string.IsNullOrEmpty(model))
-            {
-                result.Model = model;
-            }
-
-            if (queryDictionary.TryGetValue("syntaxSet", out string syntaxSet) && !string.IsNullOrEmpty(syntaxSet))
-            {
-                result.SyntaxSet = syntaxSet;
-            }
-
-            if (queryDictionary.TryGetValue("eancomS3", out string es3) && bool.TryParse(es3, out bool eancomS3))
-            {
-                result.EancomS3IsDefault = eancomS3;
-            }
-
-            if (queryDictionary.TryGetValue("basicSyntax", out string bs) && bool.TryParse(bs, out bool basicSyntax))
-            {
-                result.BasicSyntax = basicSyntax;
-            }
-
-            if (queryDictionary.TryGetValue("ack", out string ack) && !string.IsNullOrEmpty(ack))
-            {
-                result.AckVersion = ack;
-            }
-
-            if (queryDictionary.TryGetValue("charSet", out string charSet) && !string.IsNullOrEmpty(charSet))
-            {
-                result.CharSet = charSet;
-            }
-
-            if (queryDictionary.TryGetValue("skipSeq", out string sr) && bool.TryParse(sr, out bool skipSeq))
-            {
-                result.SkipSeqCountValidation = skipSeq;
-            }
-        }
-
-        return result;
+        result.Regex = query.GetString("regex");
+        result.DateFormat = query.GetString("dateFormat");
+        result.TimeFormat = query.GetString("timeFormat");
+        if (query.TryGetBool("skipSeqCount", out var skipSeqCount))
+            result.SkipSeqCount = skipSeqCount;
+        if (query.TryGetBool("skipHlSeq", out var skipHlSeq))
+            result.SkipHlSeq = skipHlSeq;
+        if (query.TryGetInt("snipLevel", out var snipLevel))
+            result.SnipLevel = snipLevel;
+        if (query.TryGetInt("maxErrors", out var maxErrors))
+            result.MaxErrors = maxErrors;
     }
 
-    public static Stream LoadToStream(this string input, Encoding? encoding = null)
+    private static Dictionary<string, string>? ParseQuery(this APIGatewayProxyRequest req)
     {
-        var enc = encoding ?? Encoding.UTF8;
-        byte[] byteArray = enc.GetBytes(input);
-        return new MemoryStream(byteArray);
+        if (req.QueryStringParameters == null || req.QueryStringParameters.Count == 0)
+            return null;
+
+        return req.QueryStringParameters
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
     }
 
-    public static string Base64Decode(this string base64EncodedData)
+    private static string? GetString(this Dictionary<string, string> query, string key)
     {
-        var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
-        return Encoding.UTF8.GetString(base64EncodedBytes);
+        return query.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value) ? value : null;
+    }
+
+    private static bool TryGetBool(this Dictionary<string, string> query, string key, out bool value)
+    {
+        value = default;
+        var raw = query.GetString(key);
+        return !string.IsNullOrEmpty(raw) && bool.TryParse(raw, out value);
+    }
+
+    private static bool TryGetInt(this Dictionary<string, string> query, string key, out int value)
+    {
+        value = default;
+        var raw = query.GetString(key);
+        return !string.IsNullOrEmpty(raw) && int.TryParse(raw, out value);
     }
 }

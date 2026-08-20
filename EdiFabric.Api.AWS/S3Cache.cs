@@ -1,31 +1,30 @@
-﻿using System.Reflection;
-using System.Runtime.Loader;
-using System.Text;
+﻿using System.Text;
+using EdiFabric.Native.X12;
 
 namespace EdiFabric.Api.AWS
 {
     public class S3Cache
     {
-        public static void Set(string apiKey)
+        public static void Set(string serialKey)
         {
             try
             {
                 var token = ReadTokenFromCache().Result;
-                SerialKey.SetToken(token);
+                EdiFabricX12.SetToken(token);
 
                 //  Refresh token before expiration
-                Refresh(apiKey);
+                Refresh(serialKey);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
 
                 //  Try one last time
                 try
                 {
-                    var token = GetFromApi(apiKey);
+                    var token = GetFromApi(serialKey);
                     WriteTokenToCache(token).Wait();
-                    SerialKey.SetToken(token);
+                    EdiFabricX12.SetToken(token);
                 }
                 catch (Exception ex2)
                 {
@@ -36,43 +35,34 @@ namespace EdiFabric.Api.AWS
             }
         }
 
-        public static async Task LoadModels()
-        {
-            var loadContext = GetLoadContext(Configuration.ApiKey);
-
-            foreach (var obj in await S3Helper.ListFromCache(Configuration.BucketName))
-            {
-                if (obj.EndsWith(".dll"))
-                {
-                    if (loadContext.Assemblies.FirstOrDefault(a => a.GetName().Name == obj) == null)
-                    {
-                        var model = await S3Helper.ReadFromCache(Configuration.BucketName, obj);
-                        model.Position = 0;
-                        loadContext.LoadFromStream(model);
-                    }
-                }
-            }
-        }
-
-        private static void Refresh(string apiKey)
+        private static void Refresh(string serialKey)
         {
             try
             {
                 //  Refresh the token two days before it expires
-                if (SerialKey.DaysToExpiration < 3)
-                    WriteTokenToCache(GetFromApi(apiKey)).Wait();
+                if (DaysToExpiration() < 3)
+                    WriteTokenToCache(GetFromApi(serialKey)).Wait();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 //  If can't get a token a day before the current expires - throw an exception
                 //  Otherwise keep trying
-                if (SerialKey.DaysToExpiration <= 1)
+                if (DaysToExpiration() <= 1)
                     throw;
             }
         }
 
-        private static string GetFromApi(string apiKey)
+        private static int DaysToExpiration()
+        {
+            var expiration = EdiFabricX12.GetTokenExpiration();
+            if (expiration is null)
+                return 0;
+
+            return Math.Max(0, (int)Math.Ceiling((expiration.Value - DateTime.UtcNow).TotalDays));
+        }
+
+        private static string GetFromApi(string serialKey)
         {
             int retries = 3;
             int index = 0;
@@ -82,7 +72,7 @@ namespace EdiFabric.Api.AWS
             {
                 try
                 {
-                    return SerialKey.GetToken(apiKey);
+                    return EdiFabricX12.GetToken(serialKey);
                 }
                 catch (Exception ex)
                 {
@@ -110,29 +100,12 @@ namespace EdiFabric.Api.AWS
 
         private static string LoadString(Stream stream)
         {
-            return new StreamReader(stream, Encoding.UTF8).ReadToEnd();  
+            return new StreamReader(stream, Encoding.UTF8).ReadToEnd();
         }
 
         private static MemoryStream LoadStream(string value)
         {
             return new MemoryStream(Encoding.UTF8.GetBytes(value));
-        }
-
-        private static AssemblyLoadContext GetLoadContext(string apiKey)
-        {
-            return AssemblyLoadContext.All.FirstOrDefault(alc => alc.Name == apiKey) ?? new CustomAssemblyLoadContext(apiKey);
-        }
-
-        public static List<Assembly> GetLoadedAssemblies()
-        {
-            return GetLoadContext(Configuration.ApiKey).Assemblies.ToList();
-        }
-    }
-
-    class CustomAssemblyLoadContext : AssemblyLoadContext
-    {
-        public CustomAssemblyLoadContext(string apiKey) : base(apiKey)
-        {
         }
     }
 }

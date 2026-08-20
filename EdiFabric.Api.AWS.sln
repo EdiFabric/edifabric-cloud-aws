@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.2.32602.215
+# Visual Studio Version 18
+VisualStudioVersion = 18.8.12023.21 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EdiFabric.Api.AWS", "EdiFabric.Api.AWS\EdiFabric.Api.AWS.csproj", "{1692ABCF-A3EB-4984-86E9-976C6BDEC32F}"
 EndProject
