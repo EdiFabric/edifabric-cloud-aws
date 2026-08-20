@@ -3,7 +3,7 @@
 ## 1. Overview
 This example hosts [ediFabric Native](https://www.edifabric.com/edifabric-native.html) behind an AWS Lambda and API Gateway HTTP API. It translates X12 EDI to JSON and back, validates transaction sets, and generates acknowledgments using the C# bindings from [edifabric-csharp-bindings](https://github.com/EdiFabric/edifabric-csharp-bindings).
 
-The native library is a self-contained shared library. No `EdiFabric.Api` NuGet package, .NET EDI runtime, or JVM is required on the target machine beyond this Lambda host.
+The native library is a self-contained shared library. No `EdiFabric.Api` NuGet package (aka EdiNation InHouse) is required on the target machine beyond this Lambda host.
 
 ## 2. Requirements
 - [Visual Studio](https://visualstudio.microsoft.com/vs/) or the .NET 10 SDK.
@@ -42,12 +42,12 @@ By default the API uses the online spec service (`SetMap` with `"default": "<ser
 ## 5. Getting started
 To deploy, follow the steps in the [How to use EDI API as AWS Lambda](https://support.edifabric.com/hc/en-us/articles/7726206553361-How-to-use-EDI-API-as-AWS-Lambda) article, then POST X12 EDI to:
 
-| Endpoint | Native call |
-| --- | --- |
-| `POST /x12/read` | `EdiFabricX12.Parse` (JSON only) |
-| `POST /x12/write` | `EdiFabricX12.Build` |
-| `POST /x12/validate` | `EdiFabricX12.Parse` (JSON + validation report) |
-| `POST /x12/ack` | `EdiFabricX12.Parse` (JSON + validation + 999/997/TA1) |
+| Endpoint | Native call | Input | Output
+| --- | --- | --- | --- |
+| `POST /x12/read` | `EdiFabricX12.Parse` (JSON only) | X12 | JSON |
+| `POST /x12/write` | `EdiFabricX12.Build` | JSON (the output from /read) | X12 |
+| `POST /x12/validate` | `EdiFabricX12.Parse` (JSON + validation report) | JSON (the output from /read) or X12 | JSON |
+| `POST /x12/ack` | `EdiFabricX12.Parse` (JSON + validation + 999/997/TA1) | JSON (the output from /read) or X12 | JSON |
 
 ## 6. Warranty
 *The source code in these example projects is strictly for demonstrational purposes and is provided "AS IS" without warranty of any kind, whether expressed or implied, including but not limited to the implied warranties of merchantability and/or fitness for a particular purpose.*
