@@ -24,4 +24,14 @@ public class X12Functions
     {
         return await _ediFunctions.Ack(request, context.Logger);
     }
+
+    public async Task<APIGatewayProxyResponse> ParseX12Async(APIGatewayProxyRequest request, ILambdaContext context)
+    {
+        return await _ediFunctions.Parse(request, context.Logger);
+    }
+
+    public async Task<APIGatewayProxyResponse> BuildX12Async(APIGatewayProxyRequest request, ILambdaContext context)
+    {
+        return await _ediFunctions.Build(request, context.Logger);
+    }
 }

@@ -14,8 +14,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
-		  ,"AmazonS3FullAccess"
+          "AWSLambdaBasicExecutionRole"
         ],
         "Events": {
           "ProxyResource": {
@@ -39,8 +38,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
-		  ,"AmazonS3FullAccess"
+          "AWSLambdaBasicExecutionRole"
         ],
         "Events": {
           "ProxyResource": {
@@ -64,8 +62,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
-		  ,"AmazonS3FullAccess"
+          "AWSLambdaBasicExecutionRole"
         ],
         "Events": {
           "ProxyResource": {
@@ -89,14 +86,61 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
-		  ,"AmazonS3FullAccess"
+          "AWSLambdaBasicExecutionRole"
         ],
         "Events": {
           "ProxyResource": {
             "Type": "Api",
             "Properties": {
               "Path": "/x12/ack",
+              "Method": "POST"
+            }
+          }
+        }
+      }
+    },
+    "ParseX12": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "EdiFabric.Api.AWS::X12Functions::ParseX12Async",
+        "Runtime": "dotnet10",
+        "CodeUri": "",
+        "Description": "Function to parse X12 files to JSON, with validation and acknowledgments (ediFabric Cloud v3)",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "ProxyResource": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/x12/parse",
+              "Method": "POST"
+            }
+          }
+        }
+      }
+    },
+    "BuildX12": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "EdiFabric.Api.AWS::X12Functions::BuildX12Async",
+        "Runtime": "dotnet10",
+        "CodeUri": "",
+        "Description": "Function to build X12 files from JSON (ediFabric Cloud v3)",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "ProxyResource": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/x12/build",
               "Method": "POST"
             }
           }

@@ -15,8 +15,6 @@
 	  <PackageReference Include="Amazon.Lambda.Core" Version="3.3.0" />
 	  <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="3.0.1" />
 	  <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="3.0.0" />
-	  <PackageReference Include="AWSSDK.ApiGatewayManagementApi" Version="3.7.400.87" />
-	  <PackageReference Include="AWSSDK.S3" Version="3.7.413.2" />
   </ItemGroup>
 	<!-- Native library: copy next to the worker on build and publish. Linux Function Apps need the .so. -->
 	<ItemGroup>
